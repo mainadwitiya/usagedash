@@ -129,6 +129,34 @@ def _render_panel(provider) -> Panel:
     table.add_row(Text("Weekly", style="bold magenta"), _cli_bar(provider.weekly_used_pct))
     table.add_row(Text("  resets", style="dim"), Text(_fmt_reset(provider.weekly_reset_at), style="bright_white"))
 
+    # ── Codex details ──
+    codex_dyn = (provider.details or {}).get("codex_limits", {})
+    if isinstance(codex_dyn, dict) and codex_dyn and provider.provider.value == "codex":
+        table.add_row("", Text())
+        table.add_row(
+            Text("Tokens", style="bold blue"),
+            Text(f"{_fmt_num(codex_dyn.get('session_tokens'))} this session", style="bright_white"),
+        )
+        table.add_row(
+            Text("Messages", style="bold blue"),
+            Text(f"{_fmt_num(codex_dyn.get('session_messages'))} this session", style="bright_white"),
+        )
+        burn = codex_dyn.get("burn_rate_tokens_per_min")
+        if burn and burn > 0:
+            table.add_row(
+                Text("Burn rate", style="bold blue"),
+                Text(_fmt_rate(burn), style="bright_white"),
+            )
+        ctx = codex_dyn.get("context_window")
+        if ctx:
+            table.add_row(
+                Text("Context", style="bold blue"),
+                Text(f"{_fmt_num(ctx)} tokens", style="bright_white"),
+            )
+        model = codex_dyn.get("model")
+        if model:
+            table.add_row(Text("Model", style="bold blue"), Text(model, style="bold cyan"))
+
     # ── Claude details ──
     dyn = (provider.details or {}).get("dynamic_limits", {})
     if isinstance(dyn, dict) and dyn and provider.provider.value == "claude":

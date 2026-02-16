@@ -144,6 +144,37 @@ class ProviderCard(Static):
             Text(f"  {_fmt_reset(snap.weekly_reset_at)}", style="bright_white"),
         )
 
+        # ── Codex details ──
+        codex_dyn = (snap.details or {}).get("codex_limits", {})
+        if isinstance(codex_dyn, dict) and codex_dyn and snap.provider.value == "codex":
+            table.add_row("", Text())
+            table.add_row(
+                Text("Tokens", style="bold blue"),
+                Text(f"  {_fmt_num(codex_dyn.get('session_tokens'))} this session", style="bright_white"),
+            )
+            table.add_row(
+                Text("Messages", style="bold blue"),
+                Text(f"  {_fmt_num(codex_dyn.get('session_messages'))} this session", style="bright_white"),
+            )
+            burn = codex_dyn.get("burn_rate_tokens_per_min")
+            if burn and burn > 0:
+                table.add_row(
+                    Text("Burn rate", style="bold blue"),
+                    Text(f"  {_fmt_rate(burn)}", style="bright_white"),
+                )
+            ctx = codex_dyn.get("context_window")
+            if ctx:
+                table.add_row(
+                    Text("Context", style="bold blue"),
+                    Text(f"  {_fmt_num(ctx)} tokens", style="bright_white"),
+                )
+            model = codex_dyn.get("model")
+            if model:
+                table.add_row(
+                    Text("Model", style="bold blue"),
+                    Text(f"  {model}", style="bold cyan"),
+                )
+
         # ── Claude dynamic details ──
         dyn = (snap.details or {}).get("dynamic_limits", {})
         if isinstance(dyn, dict) and dyn and snap.provider.value == "claude":

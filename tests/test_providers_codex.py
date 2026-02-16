@@ -9,7 +9,11 @@ def test_codex_parser_reads_percentages(tmp_path: Path) -> None:
     path = tmp_path / "history.jsonl"
     path.write_text(sample)
 
-    adapter = CodexAdapter(history_path=path)
+    # Use empty sessions_path so it falls back to history regex parsing.
+    empty_sessions = tmp_path / "sessions"
+    empty_sessions.mkdir()
+
+    adapter = CodexAdapter(history_path=path, sessions_path=empty_sessions)
     snap = adapter.collect(ProviderConfig())
 
     assert snap.session_used_pct is not None
