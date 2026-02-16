@@ -1,30 +1,18 @@
 param(
-  [string]$Repo = "adwitiya24/usagedash",
-  [string]$Version = "latest",
-  [switch]$RegisterStartup = $true
+  [string]$Repo = "mainadwitiya/usagedash"
 )
 
 $ErrorActionPreference = "Stop"
 
-$baseDir = Join-Path $env:LOCALAPPDATA "UsageDash"
-New-Item -ItemType Directory -Force -Path $baseDir | Out-Null
-
-if ($Version -eq "latest") {
-  $url = "https://github.com/$Repo/releases/latest/download/usagedash-tray-windows-x86_64.exe"
-} else {
-  $url = "https://github.com/$Repo/releases/download/$Version/usagedash-tray-windows-x86_64.exe"
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+  Write-Host "uv is required on Windows. Install it first: https://docs.astral.sh/uv/getting-started/installation/"
+  exit 1
 }
 
-$exe = Join-Path $baseDir "usagedash-tray.exe"
-Invoke-WebRequest -Uri $url -OutFile $exe
+uv tool install --upgrade "git+https://github.com/$Repo.git"
 
-if ($RegisterStartup) {
-  $action = New-ScheduledTaskAction -Execute $exe
-  $trigger = New-ScheduledTaskTrigger -AtLogOn
-  Register-ScheduledTask -TaskName "UsageDashTray" -Action $action -Trigger $trigger -Force | Out-Null
-}
+$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c usagedash tray run"
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -TaskName "UsageDashTray" -Action $action -Trigger $trigger -Force | Out-Null
 
-Write-Host "Installed tray app to $exe"
-if ($RegisterStartup) {
-  Write-Host "Registered startup task: UsageDashTray"
-}
+Write-Host "Tray startup task created: UsageDashTray"

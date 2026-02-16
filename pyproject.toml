@@ -1,0 +1,48 @@
+[project]
+name = "usagedash"
+version = "2.0.0"
+description = "Beautiful terminal usage dashboard for Codex and Claude"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "mainadwitiya" }]
+dependencies = [
+  "textual>=0.64.0",
+  "rich>=13.7.0",
+  "tomli-w>=1.0.0",
+  "pystray>=0.19.5",
+  "pillow>=10.4.0",
+]
+
+[project.scripts]
+usagedash = "usagedash.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.6.0",
+  "mypy>=1.11.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true

@@ -1,0 +1,12 @@
+{
+  "limits": {
+    "session": {
+      "percent_used": 34.5,
+      "reset_at": "2026-02-16T21:00:00Z"
+    },
+    "weekly": {
+      "percent_used": 58.0,
+      "reset_at": "2026-02-23T16:00:00Z"
+    }
+  }
+}

@@ -6,14 +6,16 @@ on:
   pull_request:
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-      - name: Check
-        run: cargo check --workspace
-      - name: Test
-        run: cargo test --workspace
+      - uses: astral-sh/setup-uv@v3
+      - name: Sync deps
+        run: uv sync --extra dev
+      - name: Lint
+        run: uv run ruff check .
+      - name: Type check
+        run: uv run mypy src
+      - name: Tests
+        run: uv run pytest
