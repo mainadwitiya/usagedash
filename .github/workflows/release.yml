@@ -1,0 +1,33 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build usagedash
+        run: cargo build --release -p usagedash-cli
+      - name: Upload linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: usagedash-linux-x86_64
+          path: target/release/usagedash
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build tray
+        run: cargo build --release -p usagedash-tray
+      - name: Upload windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: usagedash-tray-windows-x86_64.exe
+          path: target/release/usagedash-tray.exe
