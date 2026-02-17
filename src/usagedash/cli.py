@@ -13,7 +13,6 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from usagedash.app import run_dashboard
 from usagedash.config import CONFIG_PATH, load_config, save_config, set_config_value
 from usagedash.snapshot import build_snapshot, snapshot_to_json, write_snapshot_files
 from usagedash.tray import run_tray
@@ -233,6 +232,7 @@ def main() -> None:
     console = Console()
 
     if cmd == "dashboard":
+        from usagedash.app import run_dashboard
         run_dashboard(cfg)
         return
 

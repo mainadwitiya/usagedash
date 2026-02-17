@@ -58,8 +58,9 @@ class CodexAdapter(ProviderAdapter):
         # Read the most recent session file for rate_limits and token data.
         latest_rate_limits: dict | None = None
         latest_rl_ts: datetime | None = None
-        session_tokens = 0
-        session_messages = 0
+        # total_token_usage is cumulative — just keep the latest snapshot.
+        session_total_usage: dict | None = None
+        seen_totals: set[int] = set()  # deduplicate token_count events
         session_start: datetime | None = None
         model_name: str | None = None
         context_window: int | None = None
@@ -81,9 +82,17 @@ class CodexAdapter(ProviderAdapter):
                         # Extract session metadata.
                         if event_type == "session_meta":
                             payload = obj.get("payload", {})
-                            meta_model = (payload.get("base_instructions") or {})
                             if not model_name:
                                 model_name = payload.get("model") or None
+                            if ts and (session_start is None or ts < session_start):
+                                session_start = ts
+
+                        # Model name lives in turn_context events.
+                        if event_type == "turn_context":
+                            payload = obj.get("payload", {})
+                            m = payload.get("model")
+                            if m:
+                                model_name = m
 
                         # Extract rate limits and token usage from token_count events.
                         if event_type == "event_msg":
@@ -102,19 +111,13 @@ class CodexAdapter(ProviderAdapter):
                                 if isinstance(cw, int) and cw > 0:
                                     context_window = cw
 
-                                # Accumulate token usage from last_token_usage.
-                                last_usage = info.get("last_token_usage", {})
-                                if isinstance(last_usage, dict) and ts and ts >= five_hours_ago:
-                                    inp = last_usage.get("input_tokens", 0)
-                                    out = last_usage.get("output_tokens", 0)
-                                    reasoning = last_usage.get("reasoning_output_tokens", 0)
-                                    if isinstance(inp, (int, float)):
-                                        session_tokens += int(inp)
-                                    if isinstance(out, (int, float)):
-                                        session_tokens += int(out)
-                                    session_messages += 1
-                                    if session_start is None or (ts and ts < session_start):
-                                        session_start = ts
+                                # total_token_usage is cumulative — always keep the latest.
+                                total_usage = info.get("total_token_usage")
+                                if isinstance(total_usage, dict):
+                                    total_tok = total_usage.get("total_tokens", 0)
+                                    if total_tok not in seen_totals:
+                                        seen_totals.add(total_tok)
+                                    session_total_usage = total_usage
 
             except OSError:
                 continue
@@ -122,6 +125,16 @@ class CodexAdapter(ProviderAdapter):
             # If we found rate limits in the most recent file, use it.
             if found_in_file:
                 break
+
+        # Extract cumulative token count from the final total_token_usage snapshot.
+        session_tokens = 0
+        if session_total_usage:
+            inp = session_total_usage.get("input_tokens", 0)
+            out = session_total_usage.get("output_tokens", 0)
+            if isinstance(inp, (int, float)):
+                session_tokens += int(inp)
+            if isinstance(out, (int, float)):
+                session_tokens += int(out)
 
         if latest_rate_limits is None:
             return PartialUsage(messages=["no rate limit data found in Codex session files"])
@@ -155,7 +168,7 @@ class CodexAdapter(ProviderAdapter):
                 "session_used_pct": session_used,
                 "weekly_used_pct": weekly_used,
                 "session_tokens": session_tokens,
-                "session_messages": session_messages,
+                "session_messages": len(seen_totals),
                 "burn_rate_tokens_per_min": round(burn_rate, 1),
                 "context_window": context_window,
                 "model": model_name,
