@@ -45,12 +45,15 @@ class CodexAdapter(ProviderAdapter):
         five_hours_ago = now - timedelta(hours=5)
 
         # Find recent session files (today + yesterday to cover edge cases).
+        # Sort by modification time (not filename) — a resumed session has an
+        # earlier creation timestamp but the most recent writes.
         candidates: list[Path] = []
         for day_offset in range(2):
             day = now - timedelta(days=day_offset)
             day_dir = self.sessions_path / day.strftime("%Y/%m/%d")
             if day_dir.exists():
-                candidates.extend(sorted(day_dir.glob("rollout-*.jsonl"), reverse=True))
+                candidates.extend(day_dir.glob("rollout-*.jsonl"))
+        candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
 
         if not candidates:
             return PartialUsage(messages=["no recent Codex session files found"])
